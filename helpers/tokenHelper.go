@@ -2,6 +2,8 @@ package helpers
 
 import (
 	"context"
+	"fmt"
+
 	"log"
 	"os"
 	"time"
@@ -66,11 +68,11 @@ func UpdateAllTokens(signedToken string, signedRefreshToken string, userId strin
 
 	var updateObj primitive.D
 
-	updateObj = append(updateObj, bson.E{"token", signedToken})
-	updateObj = append(updateObj, bson.E{"refresh_token", signedRefreshToken})
+	updateObj = append(updateObj, bson.E{Key: "token", Value: signedToken})
+	updateObj = append(updateObj, bson.E{Key: "refresh_token", Value: signedRefreshToken})
 
 	updated_at, _ := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-	updateObj = append(updateObj, bson.E{"updated_at", updated_at})
+	updateObj = append(updateObj, bson.E{Key: "updated_at", Value: updated_at})
 
 	upsert := true
 	filter := bson.M{"user_id": userId}
@@ -82,7 +84,7 @@ func UpdateAllTokens(signedToken string, signedRefreshToken string, userId strin
 		ctx,
 		filter,
 		bson.D{
-			{"$set", updateObj},
+			{Key: "$set", Value: updateObj},
 		},
 		&opt,
 	)
@@ -91,4 +93,32 @@ func UpdateAllTokens(signedToken string, signedRefreshToken string, userId strin
 		log.Panic(err)
 		return
 	}
+}
+
+func ValidateToken(signedToken string) (claims *SignedDetails, msg string) {
+	token, err := jwt.ParseWithClaims(
+		signedToken,
+		&SignedDetails{},
+		func(token *jwt.Token) (interface{}, error) {
+			return []byte(SECRET_KEY), nil
+		},
+	)
+	if err != nil {
+		msg = err.Error()
+		return
+	}
+	claims, ok := token.Claims.(*SignedDetails)
+	if !ok {
+		msg = fmt.Sprintf("the token is invalid")
+		msg = err.Error()
+		return
+	}
+
+	if claims.ExpiresAt < time.Now().Local().Unix() {
+		msg = fmt.Sprintf("token is expired")
+		msg = err.Error()
+		return
+	}
+	return claims, msg
+
 }
