@@ -28,3 +28,5 @@ func CheckUserType(c *gin.Context, role string) (err error) {
 	}
 	return err
 }
+
+//
