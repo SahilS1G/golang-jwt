@@ -3,7 +3,6 @@ package routes
 import (
 	controller "github.com/SahilS1G/golang-jwt/controllers"
 	"github.com/SahilS1G/golang-jwt/middleware"
-	// "github.com/SahilS1G/golang-jwt/middleware"
 	"github.com/gin-gonic/gin"
 )
 
